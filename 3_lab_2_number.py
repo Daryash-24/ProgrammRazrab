@@ -3,7 +3,7 @@ import random
 
 # 1. GET запрос (параметр param=случайное число)
 param = random.randint(1, 10) # Генерируем случайное число от 1 до 10 для параметра запроса
-otvet_get = requests.get(f'http://localhost:5000/number/?param={param}')
+otvet_get = requests.get(f'http://127.0.0.1:5000/number/?param={param}')
 data_get = otvet_get.json() # Преобразуем ответ сервера из JSON формата в словарь Python
 print("GET:", data_get)
 
