@@ -1,7 +1,6 @@
 #Импорт библиотек
 import os #Для работы с переменными окружения (например, получения токена)
 import asyncio #Для асинхронного запуска бота
-from email import message_from_string
 
 #Импорт необходимых модулей aiogram
 from aiogram import Bot, Dispatcher, types #Основные классы для работы с ботом
