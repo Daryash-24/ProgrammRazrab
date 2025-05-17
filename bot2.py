@@ -98,7 +98,6 @@ async def start_command(message: types.Message):
     else:
         # Обычному пользователю — базовое меню
         await message.answer("Добро пожаловать, человечишка! Я всё еще великий бот, который хочет захватить мир и уважает, только своих администраторов😈", reply_markup=user_keyboard)
-
 # Обработчик команды /manage_currency (только для админов)
 @dp.message(Command('manage_currency'))
 async def manage_currency_admin(message: types.Message):
@@ -190,8 +189,7 @@ async def delete_currency(message: types.Message, state: FSMContext):
 @dp.message(UpdateCurrencyState.currency_name)
 async def vvod_currency_name_to_update(message: types.Message, state: FSMContext):
     currency_name = message.text.upper() # Перевод названия валюты в верхний регистр
-
-    # Проверяем, существует ли такая валюта в базе данных
+# Проверяем, существует ли такая валюта в базе данных
     cur.execute("SELECT currency_name FROM currencies WHERE currency_name = %s", (currency_name,))
     result = cur.fetchone()
 
@@ -225,23 +223,33 @@ async def vvod_new_currency_rate(message: types.Message, state: FSMContext):
     # Очистка состояния
     await state.clear()
 
-# Команда /get_currencies — выводит список всех валют с курсами
+
 @dp.message(Command('get_currencies'))
 async def get_currencies(message: types.Message):
-    # Обращаемся к базе за списком валют
-    cur.execute("SELECT currency_name, rate FROM currencies ORDER BY currency_name")
-    rows = cur.fetchall()
+    """Получение списка всех валют с курсами"""
+    try:
+        with psycopg2.connect(**DB_CONFIG) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT currency_name, rate 
+                    FROM currencies 
+                    ORDER BY currency_name
+                """)
 
-    # Если есть результат (если есть что выводить)
-    if rows:
-        response = "Список валют и их курс к рублю:\n"
-        for name, rate in rows:
-            response += f"• {name}: {rate}₽\n"
-    # Если нет сохраненных валют
-    else:
-        response = "В базе данных пока нет сохранённых валют."
+                currencies = cur.fetchall()
 
-    await message.answer(response)
+                if currencies:
+                    response = "Список доступных валют:\n\n" + \
+                               "\n".join([f"• {name}: {rate}₽" for name, rate in currencies])
+                else:
+                    response = "Нет доступных валют в базе данных."
+
+                await message.answer(response)
+
+    except psycopg2.Error as e:
+        await message.answer("Ошибка при подключении к базе данных")
+    except Exception as e:
+        await message.answer(f"Неизвестная ошибка: {str(e)}")
 
 # Команда /convert — запускает процесс конвертации
 @dp.message(Command('convert'))
@@ -291,5 +299,5 @@ async def main():
     await dp.start_polling(bot)
 
 # Запуск бота
-if __name__ == '__main__':
+if __name__ == 'main':
     asyncio.run(main())
